@@ -46,6 +46,7 @@ Keep these values synchronized:
 3. `Cargo.toml`: workspace package version and internal dependency versions.
 4. `Cargo.lock`: `terminal-host`, `terminal-pty` and `terminal-protocol` package versions.
 5. `plugin/plugin.json` and `plugin/.codex-plugin/plugin.json`.
+6. `VERSION` in `mcp/tools.mjs`; rebuild and commit `plugin/server/index.mjs` and its dependency notices. The MCP test checks server/plugin/package version consistency.
 
 Use stable numeric `major.minor.patch` versions, with each component no greater than 65535 to fit Chrome's manifest format. Update user-facing installation and release notes when behavior changes.
 

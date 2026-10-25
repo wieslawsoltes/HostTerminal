@@ -28,6 +28,13 @@ const MAX_CONNECTIONS: usize = 16;
 const SOCKET_TIMEOUT: Duration = Duration::from_secs(2);
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 const DESCRIPTOR_BYTES: u64 = 4096;
+// Winsock can delay a refused loopback connection while it retries the SYN.
+// Give it time to report ConnectionRefused; a short deadline produces TimedOut,
+// which correctly cannot establish that a descriptor is stale.
+#[cfg(windows)]
+const STALE_PROBE_CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
+#[cfg(not(windows))]
+const STALE_PROBE_CONNECT_TIMEOUT: Duration = Duration::from_millis(250);
 
 #[derive(Deserialize, Serialize)]
 struct Descriptor {
@@ -385,12 +392,19 @@ fn remove_own_descriptor(path: &Path, token: &str) {
 }
 
 fn reclaim_stale_descriptor(path: &Path) -> Result<()> {
+    reclaim_stale_descriptor_with_connect(path, TcpStream::connect_timeout)
+}
+
+fn reclaim_stale_descriptor_with_connect(
+    path: &Path,
+    connect: impl FnOnce(&SocketAddr, Duration) -> io::Result<TcpStream>,
+) -> Result<()> {
     if !path.try_exists()? {
         return Ok(());
     }
     let descriptor = read_descriptor(path)?;
     let address = SocketAddr::from((Ipv4Addr::LOCALHOST, descriptor.port));
-    match TcpStream::connect_timeout(&address, Duration::from_millis(250)) {
+    match connect(&address, STALE_PROBE_CONNECT_TIMEOUT) {
         Ok(mut stream) => {
             stream.set_read_timeout(Some(Duration::from_millis(500)))?;
             stream.set_write_timeout(Some(Duration::from_millis(500)))?;
@@ -417,7 +431,9 @@ fn reclaim_stale_descriptor(path: &Path) -> Result<()> {
             }
             Ok(())
         }
-        Err(_) => bail!("Could not establish whether the existing bridge is still running"),
+        Err(error) => {
+            Err(error).context("Could not establish whether the existing bridge is still running")
+        }
     }
 }
 
@@ -760,6 +776,27 @@ mod tests {
         .unwrap();
         second.enable().unwrap();
         assert_eq!(second.status()["enabled"], true);
+    }
+
+    #[test]
+    fn uncertain_connection_failure_preserves_existing_credentials() {
+        let dir = TempDir::new();
+        let descriptor = Descriptor {
+            protocol: 1,
+            port: 12345,
+            token: "a".repeat(64),
+            pid: 1,
+        };
+        write_descriptor(&dir.descriptor(), &descriptor).unwrap();
+        let original = fs::read(dir.descriptor()).unwrap();
+        for kind in [io::ErrorKind::TimedOut, io::ErrorKind::PermissionDenied] {
+            let error = reclaim_stale_descriptor_with_connect(&dir.descriptor(), |_, _| {
+                Err(io::Error::new(kind, "injected ambiguous probe failure"))
+            })
+            .unwrap_err();
+            assert_eq!(error.downcast_ref::<io::Error>().unwrap().kind(), kind);
+            assert_eq!(fs::read(dir.descriptor()).unwrap(), original);
+        }
     }
 
     #[test]

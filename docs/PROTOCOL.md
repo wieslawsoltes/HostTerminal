@@ -21,7 +21,7 @@ Each request has a `type` and may have an `id` containing 1–128 bytes without 
 Successful result:
 
 ```json
-{"id":"r1","type":"result","ok":true,"value":{"protocol":1,"version":"0.1.0"}}
+{"id":"r1","type":"result","ok":true,"value":{"protocol":1,"version":"0.2.0"}}
 ```
 
 The example omits the rest of hello's fields for readability. The complete value contains `protocol`, `version`, `os`, `arch`, `home`, `defaultShell`, `shells`, and `limits`.

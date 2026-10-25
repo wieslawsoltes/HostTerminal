@@ -94,6 +94,14 @@ impl Session {
                         }
                     }
                 }
+                #[cfg(unix)]
+                // Darwin's slave close waits for queued output to drain, even
+                // while a killed process is exiting. The reader was cancelled
+                // above, so retaining this master until after wait() deadlocks
+                // a saturated terminal. Release it now: cancelled reader/writer
+                // clones close within their poll deadline, and the final master
+                // hangup flushes the queue and lets the child finish exiting.
+                release_master(&self.master);
                 let _ = process.child.kill();
                 // portable-pty's concrete Child::kill guarantees eventual
                 // termination (including Unix escalation); reap to avoid zombies.
@@ -246,14 +254,19 @@ impl SessionManager {
         };
         // Session RAII now owns the spawned child. A thread-creation failure drops
         // it and terminates the process; successful workers receive cancellation.
-        spawn_reader(
+        if let Err(error) = spawn_reader(
             id.clone(),
             reader,
             flow.clone(),
             self.events.clone(),
             cancel_rx.clone(),
             read_done,
-        )?;
+        ) {
+            // Session::drop may have to reap a Darwin child blocked in ttywait.
+            // Do not keep an unstarted writer's master clone alive across it.
+            drop(writer);
+            return Err(error);
+        }
         spawn_writer(writer, input_rx, cancel_rx.clone())?;
         spawn_monitor(
             id.clone(),
@@ -601,6 +614,7 @@ mod tests {
     fn output_flood_stops_at_credit_window_and_close_does_not_hang() {
         let (mut manager, events) = SessionManager::new();
         let session = manager.create(shell_options("exec yes flood")).unwrap();
+        eprintln!("flood: started child {:?}", session.pid);
         let mut total = 0;
         while total < OUTPUT_WINDOW_BYTES {
             match events.recv_timeout(Duration::from_secs(5)).unwrap() {
@@ -608,11 +622,32 @@ mod tests {
                 _ => panic!("Unexpected exit"),
             }
         }
+        eprintln!("flood: reached {total} bytes without acknowledgement");
         assert_eq!(total, OUTPUT_WINDOW_BYTES);
         assert!(events.recv_timeout(Duration::from_millis(50)).is_err());
-        let start = std::time::Instant::now();
-        manager.close(&session.id).unwrap();
-        assert!(start.elapsed() < Duration::from_secs(2));
+        eprintln!("flood: closing saturated session");
+        let (closed, completed) = bounded(1);
+        let id = session.id.clone();
+        let worker = thread::spawn(move || {
+            let result = manager.close(&id);
+            let _ = closed.send((result, manager));
+        });
+        let (result, manager) = completed
+            .recv_timeout(Duration::from_secs(2))
+            .expect("closing a saturated PTY did not finish within two seconds");
+        result.unwrap();
+        worker.join().unwrap();
+        eprintln!("flood: close completed and worker joined");
         assert!(manager.list().is_empty());
+        // Closing must reap the child, not just move an indefinitely blocked
+        // wait into a detached background task or leave a zombie behind.
+        let mut status = 0;
+        let waited =
+            unsafe { libc::waitpid(session.pid.unwrap() as i32, &mut status, libc::WNOHANG) };
+        assert_eq!(waited, -1, "closed child was still running or unreaped");
+        assert_eq!(
+            std::io::Error::last_os_error().raw_os_error(),
+            Some(libc::ECHILD)
+        );
     }
 }

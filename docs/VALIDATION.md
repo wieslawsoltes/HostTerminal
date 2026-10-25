@@ -18,9 +18,9 @@ Recorded 25 October 2026. Local results are listed below. The [GitHub Actions ru
 | Protocol/broker JavaScript tests | 17 passed |
 | MCP SDK, tools, stdio and HTTP integration | 15 passed |
 | Release packaging/publication invariant tests | 14 passed |
-| Rust workspace tests on Linux | 24 passed: 5 protocol, 7 PTY/flow/cancellation, 7 host/bridge, 5 installer |
+| Rust workspace tests on Linux | 25 passed: 5 protocol, 7 PTY/flow/cancellation, 8 host/bridge, 5 installer |
 | Rust formatting and Clippy, warnings denied | Passed |
-| Real installed-native-host process integration | 6 tests; version 0.1.0 baseline passed debug/GNU/musl; 0.2.0 rerun in CI |
+| Real installed-native-host process integration | 6 passed against the 0.2.0 installed Linux native host; also run on POSIX CI |
 | Windows x86-64 target, all-target workspace `cargo check` | Passed |
 | Apple Silicon macOS target, all-target workspace `cargo check` | Passed |
 | Extension production build and ZIP packaging | Passed |

@@ -10,7 +10,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { BridgeClient, BridgeError, defaultBridgeFile, decodeFrameLength, encodeFrame, readDescriptor } from '../mcp/bridge.mjs';
-import { commandArguments } from '../mcp/tools.mjs';
+import { commandArguments, VERSION } from '../mcp/tools.mjs';
 import { initializeToken, loadHttpToken, normalizeOrigin, startHttpServer } from '../mcp/http.mjs';
 import { parseArguments } from '../mcp/index.mjs';
 
@@ -360,6 +360,8 @@ test('platform discovery, shell dispatch, arguments and package manifests are co
   const wiring = JSON.parse(await readFile('plugin/mcp.json', 'utf8'));
   const marketplace = JSON.parse(await readFile('.agents/plugins/marketplace.json', 'utf8'));
   assert.equal(manifest.version, compatibility.version);
+  assert.equal(manifest.version, VERSION);
+  assert.equal(manifest.version, JSON.parse(await readFile('package.json', 'utf8')).version);
   assert.equal(wiring.mcpServers.host_terminal.type, 'stdio');
   assert.deepEqual(wiring.mcpServers.host_terminal.args, ['${PLUGIN_ROOT}/server/index.mjs']);
   assert.equal(marketplace.plugins[0].name, manifest.name);
