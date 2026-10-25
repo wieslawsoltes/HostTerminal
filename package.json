@@ -1,0 +1,42 @@
+{
+  "name": "host-terminal",
+  "version": "0.2.0",
+  "private": true,
+  "description": "A real host terminal inside Chrome, using Native Messaging and Rust PTYs",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx tests/run.ts",
+    "test:host": "python3 tests/native_smoke.py",
+    "test:browser": "node tests/browser.mjs",
+    "package": "node scripts/package.mjs",
+    "check": "npm run typecheck && npm test && npm run test:mcp && npm run build && npm run build:plugin",
+    "build:plugin": "node scripts/build-plugin.mjs",
+    "package:plugin": "node scripts/package-plugin.mjs",
+    "test:mcp": "node --test tests/mcp*.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/addon-search": "0.16.0",
+    "@xterm/addon-serialize": "0.14.0",
+    "@xterm/addon-web-links": "0.12.0",
+    "@xterm/addon-webgl": "0.19.0",
+    "@xterm/xterm": "6.0.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/chrome": "0.3.6",
+    "@types/node": "26.6.5",
+    "esbuild": "0.28.2",
+    "fflate": "0.8.3",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}

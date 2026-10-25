@@ -1,0 +1,42 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "host-terminal",
+  "version": "0.2.0",
+  "description": "Use real host terminal sessions shared with the Host Terminal Chrome extension.",
+  "author": {
+    "name": "wieslawsoltes",
+    "url": "https://github.com/wieslawsoltes"
+  },
+  "homepage": "https://github.com/wieslawsoltes/HostTerminal",
+  "repository": "https://github.com/wieslawsoltes/HostTerminal",
+  "license": "MIT",
+  "keywords": [
+    "terminal",
+    "chrome",
+    "pty",
+    "mcp",
+    "development"
+  ],
+  "extensions": {
+    "com.openai": {
+      "requires_local_executor": true,
+      "interface": {
+        "displayName": "Host Terminal",
+        "shortDescription": "Your host terminal, shared with Chrome",
+        "longDescription": "Run commands and work with interactive terminal sessions through the Host Terminal Chrome extension. Requires Node.js 22 or later, the extension and native host, and ChatGPT access explicitly enabled in Chrome.",
+        "developerName": "wieslawsoltes",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "websiteURL": "https://github.com/wieslawsoltes/HostTerminal",
+        "defaultPrompt": [
+          "List my Host Terminal sessions and help me with my project.",
+          "Run a command in a new Host Terminal session and show me its output."
+        ]
+      }
+    }
+  }
+}
+

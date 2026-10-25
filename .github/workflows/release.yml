@@ -1,0 +1,177 @@
+name: Release packages
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/release-request.json]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish (must equal all checked-in manifests; defaults to package.json)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+# Serialize publication and never cancel a release partway through its upload.
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: '1'
+
+jobs:
+  prepare:
+    name: Validate release intent and versions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      commit: ${{ steps.version.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate the exact commit requested for publication
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          RELEASE_HEAD_MESSAGE: ${{ github.event.head_commit.message }}
+        run: python scripts/release.py validate
+
+  verify:
+    name: Required checks
+    needs: prepare
+    uses: ./.github/workflows/ci.yml
+    with:
+      release: true
+    permissions:
+      contents: read
+
+  native:
+    name: Package / ${{ matrix.target }}
+    needs: [prepare, verify]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            extension: ''
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            extension: ''
+          - os: macos-15
+            target: aarch64-apple-darwin
+            extension: ''
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            extension: ''
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+            extension: '.exe'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+      - name: Install musl linker
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install --yes musl-tools
+      - name: Test the exact target being shipped
+        run: cargo test --workspace --target ${{ matrix.target }} --locked
+      - run: cargo build --release --target ${{ matrix.target }} --locked -p terminal-host
+      - name: Collect licenses for every locked dependency
+        run: |
+          cargo fetch --locked
+          python scripts/third_party.py
+      - name: Assemble versioned native ZIP and SHA-256 checksum
+        run: python scripts/release.py pack-native --target ${{ matrix.target }} --binary target/${{ matrix.target }}/release/host-terminal${{ matrix.extension }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-native-${{ matrix.target }}
+          path: release/*.zip*
+          if-no-files-found: error
+          retention-days: 14
+
+  packages:
+    name: Extension, plugin and complete source packages
+    needs: [prepare, verify]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@1.89.0
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      - run: npm run build
+      - run: npm run build:plugin
+      - run: npm run package
+      - run: npm run package:plugin
+      - name: Collect native licenses for the source distribution
+        run: |
+          cargo fetch --locked
+          python scripts/third_party.py
+      - run: python scripts/package-source.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: artifacts/*.zip*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Verify all assets and publish the release
+    needs: [prepare, verify, native, packages]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      RELEASE_COMMIT: ${{ needs.prepare.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: release
+      - name: Verify complete asset set and create release manifest
+        run: python scripts/release.py assemble --version "$RELEASE_VERSION" --commit "$RELEASE_COMMIT" --directory release
+      - name: Create immutable tag, stage and verify uploads, then publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/release.py publish --version "$RELEASE_VERSION" --commit "$RELEASE_COMMIT" --directory release

@@ -1,0 +1,10 @@
+node_modules/
+target/
+dist/
+artifacts/
+test-results/
+*.log
+.DS_Store
+native/THIRD_PARTY_NOTICES.txt
+__pycache__/
+CONTRACT.md

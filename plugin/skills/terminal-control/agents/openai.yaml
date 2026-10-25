@@ -1,0 +1,4 @@
+interface:
+  display_name: "Host Terminal"
+  short_description: "Work with host terminal sessions shared with Chrome"
+  default_prompt: "Use $terminal-control to inspect my Host Terminal sessions and complete the requested terminal task."

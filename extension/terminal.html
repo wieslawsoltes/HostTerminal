@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" data-theme="midnight">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Host Terminal</title>
+  <link rel="stylesheet" href="terminal.css">
+  <script type="module" src="terminal.js"></script>
+</head>
+<body>
+  <svg class="icon-definitions" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 6 5 6-5 6m8 0h6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-split" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16M8 4v6m8 4v6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
+    <symbol id="i-paste" viewBox="0 0 24 24"><path d="M9 4H5v17h14V4h-4"/><rect x="9" y="2" width="6" height="5" rx="1"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9M7 5a9 9 0 1 0 10 0"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m15 4 5 5M4 20l5-1L21 7l-4-4L5 15l-1 5Z"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3h.01"/></symbol>
+    <symbol id="i-command" viewBox="0 0 24 24"><path d="M8 8H5a3 3 0 1 1 3-3v14a3 3 0 1 1-3-3h14a3 3 0 1 1-3 3V5a3 3 0 1 1 3 3H8Z"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M8 2v5m8-5v5M6 7h12v3a6 6 0 0 1-6 6v6M4 7h16"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6V4h7l2 3h9v13H3V6Z"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <button id="toggle-sidebar" class="icon-button mobile-menu" title="Toggle session sidebar" aria-label="Toggle session sidebar"><svg><use href="#i-sidebar"/></svg></button>
+    <a class="brand" href="terminal.html" aria-label="Host Terminal home"><span class="brand-mark"><svg><use href="#i-terminal"/></svg></span><span>Host<span class="brand-light"> Terminal</span></span></a>
+    <span class="topbar-divider"></span><span class="workspace-name">Local workspace</span>
+    <div class="topbar-spacer"></div>
+    <button id="command-palette" class="palette-trigger" title="Command palette (Ctrl+Shift+P)"><svg><use href="#i-command"/></svg><span>Commands</span><kbd>⇧ P</kbd></button>
+    <button id="agent-button" class="icon-button" title="ChatGPT access: off" aria-label="ChatGPT access: off"><svg><use href="#i-plug"/></svg></button>
+    <button id="help-button" class="icon-button" title="Setup and keyboard shortcuts" aria-label="Setup and keyboard shortcuts"><svg><use href="#i-help"/></svg></button>
+    <button id="settings-button" class="icon-button" title="Settings" aria-label="Settings"><svg><use href="#i-settings"/></svg></button>
+  </header>
+
+  <div class="app-body">
+    <aside class="sidebar" aria-label="Terminal sessions">
+      <div class="sidebar-label"><span>WORKSPACE</span><span id="session-count" class="count">0</span></div>
+      <div class="host-card"><span id="host-indicator" class="status-dot"></span><div><strong id="host-name">This computer</strong><span id="host-description">Companion disconnected</span></div></div>
+      <div class="sidebar-section"><h2>Sessions</h2><button id="sidebar-new" class="icon-button small" title="New terminal" aria-label="New terminal"><svg><use href="#i-plus"/></svg></button></div>
+      <div id="session-list" class="session-list"></div>
+      <div class="sidebar-bottom">
+        <button id="profiles-button" class="sidebar-action"><svg><use href="#i-terminal"/></svg><span>Shell profiles</span><svg class="trailing"><use href="#i-chevron"/></svg></button>
+        <button id="disconnect-all" class="sidebar-action danger" disabled><svg><use href="#i-power"/></svg><span>End all sessions</span></button>
+        <div class="local-label"><span class="tiny-dot"></span>Runs on your computer</div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <div class="workspace-toolbar">
+        <div class="profile-launcher"><label class="sr-only" for="profile-select">Shell profile</label><select id="profile-select" title="Profile for new terminals"></select><button id="new-terminal" class="primary-button small-button"><svg><use href="#i-plus"/></svg><span>New terminal</span></button></div>
+        <div class="toolbar-actions">
+          <button id="search-button" class="icon-button" title="Find in terminal (Ctrl+Shift+F)" aria-label="Find in terminal"><svg><use href="#i-search"/></svg></button>
+          <button id="copy-button" class="icon-button" title="Copy selection (Ctrl+Shift+C)" aria-label="Copy selection"><svg><use href="#i-copy"/></svg></button>
+          <button id="paste-button" class="icon-button" title="Paste clipboard" aria-label="Paste clipboard"><svg><use href="#i-paste"/></svg></button>
+          <button id="export-button" class="icon-button" title="Export terminal scrollback" aria-label="Export terminal scrollback"><svg><use href="#i-download"/></svg></button>
+          <span class="toolbar-divider"></span>
+          <label class="layout-picker" title="Terminal layout"><svg><use href="#i-split"/></svg><select id="layout-select" aria-label="Terminal layout"><option value="single">Single</option><option value="columns">Side by side</option><option value="rows">Stacked</option><option value="grid">Grid</option></select></label>
+        </div>
+      </div>
+      <div id="tabs" class="tabs" role="tablist" aria-label="Open terminals"></div>
+      <div id="connection-banner" class="connection-banner" hidden><span id="connection-message"></span><button id="reconnect-button" class="text-button">Connect</button></div>
+      <div id="search-bar" class="search-bar" hidden><svg><use href="#i-search"/></svg><input id="search-input" type="search" placeholder="Find in active terminal…" aria-label="Find text" autocomplete="off" spellcheck="false"><span id="search-results" aria-live="polite"></span><label title="Match case"><input id="search-case" type="checkbox"><span>Aa</span></label><label title="Regular expression"><input id="search-regex" type="checkbox"><span>.*</span></label><button id="search-prev" class="icon-button small" title="Previous match (Shift+Enter)" aria-label="Previous match"><svg><use href="#i-up"/></svg></button><button id="search-next" class="icon-button small" title="Next match (Enter)" aria-label="Next match"><svg><use href="#i-down"/></svg></button><button id="search-close" class="icon-button small" title="Close search (Escape)" aria-label="Close search"><svg><use href="#i-close"/></svg></button></div>
+      <div id="workspace" class="workspace layout-single">
+        <section id="welcome" class="welcome" aria-labelledby="welcome-title">
+          <div class="welcome-content">
+            <span class="eyebrow"><span class="tiny-dot"></span>NATIVE SHELL. BROWSER WORKSPACE.</span>
+            <div class="welcome-logo"><svg><use href="#i-terminal"/></svg></div>
+            <h1 id="welcome-title">Your machine.<br>Your terminal.</h1>
+            <p>A real local shell, right in Chrome. Open multiple sessions, split your workspace, and keep your tools close.</p>
+            <button id="connect-button" class="primary-button connect-button"><span>Connect to this computer</span><svg><use href="#i-arrow"/></svg></button>
+            <p id="connect-error" class="connect-error" role="alert" hidden></p>
+            <div class="setup-card"><div class="setup-heading"><span class="step-number">1</span><strong>Install the native companion</strong></div><p>From the extracted package, run the companion's install command using this extension ID.</p><div class="extension-id-row"><code id="extension-id"></code><button id="copy-extension-id" class="icon-button small" aria-label="Copy extension ID" title="Copy extension ID"><svg><use href="#i-copy"/></svg></button></div><div class="setup-command-row"><code id="install-command"></code><button id="copy-install-command" class="icon-button small" aria-label="Copy install command" title="Copy install command"><svg><use href="#i-copy"/></svg></button></div><button id="setup-help" class="text-button">Installation instructions <span aria-hidden="true">↗</span></button></div>
+            <div class="welcome-features"><span><svg><use href="#i-check"/></svg>Real PTY sessions</span><span><svg><use href="#i-check"/></svg>Local connection</span><span><svg><use href="#i-check"/></svg>Windows · macOS · Linux</span></div>
+          </div>
+        </section>
+      </div>
+      <footer class="statusbar"><span class="connection-status"><span id="footer-indicator" class="status-dot"></span><span id="footer-status">Disconnected</span></span><span id="active-shell" class="status-shell">Native Messaging</span><span class="status-spacer"></span><span id="terminal-dimensions"></span><span id="status-hint">Ready when you are</span></footer>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <dialog id="agent-dialog" class="modal help-modal" aria-labelledby="agent-title">
+    <div class="modal-heading"><div><span class="eyebrow">WORK TOGETHER</span><h2 id="agent-title">ChatGPT terminal access</h2></div><button class="icon-button" data-close="agent-dialog" aria-label="Close ChatGPT access"><svg><use href="#i-close"/></svg></button></div>
+    <div class="modal-scroll">
+      <h3 id="agent-status">ChatGPT access is off</h3><p id="agent-description"></p>
+      <h3>Connect your plugin</h3><ol class="setup-steps"><li>Download the ChatGPT plugin from <a href="https://github.com/wieslawsoltes/HostTerminal/releases" target="_blank" rel="noopener noreferrer">Host Terminal releases</a> and extract it. Install Node.js 22 or newer on this computer.</li><li>Import the plugin in a desktop client that supports local MCP, or use the included MCP server with a Secure MCP Tunnel for ChatGPT on the web. See the plugin's README for setup.</li><li>Choose <strong>Enable ChatGPT access</strong> below. Sessions started by ChatGPT appear here, and you can type in or interrupt them at any time.</li></ol>
+      <p>Enabling access allows shell commands with the same file, network, and process permissions as your terminal. Only enable a plugin you intend to give that access.</p>
+      <div id="agent-descriptor-row" hidden><h3>Connection file</h3><p class="muted">The plugin discovers this automatically. For a custom install, set <code>HOST_TERMINAL_BRIDGE_FILE</code> to this path.</p><div class="agent-descriptor-row"><code id="agent-descriptor"></code><button id="copy-agent-descriptor" class="icon-button small" title="Copy connection file path" aria-label="Copy connection file path"><svg><use href="#i-copy"/></svg></button></div></div>
+      <p id="agent-error" class="form-error" role="alert" hidden></p>
+    </div>
+    <div class="modal-actions"><button class="secondary-button" data-close="agent-dialog">Done</button><button id="agent-enable" class="primary-button">Enable ChatGPT access</button><button id="agent-disable" class="secondary-button danger" hidden>Disable ChatGPT access</button></div>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="modal compact-modal" aria-labelledby="confirm-title"><form method="dialog"><div class="modal-heading"><h2 id="confirm-title"></h2><button class="icon-button" value="cancel" aria-label="Cancel"><svg><use href="#i-close"/></svg></button></div><p id="confirm-message"></p><pre id="confirm-preview" hidden></pre><div class="modal-actions"><button class="secondary-button" value="cancel" autofocus>Cancel</button><button id="confirm-accept" class="primary-button" value="accept">Continue</button></div></form></dialog>
+
+  <dialog id="rename-dialog" class="modal compact-modal" aria-labelledby="rename-title"><form id="rename-form"><div class="modal-heading"><h2 id="rename-title">Rename terminal</h2><button type="button" class="icon-button" data-close="rename-dialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div><label class="field">Session name<input id="rename-input" maxlength="100" required autocomplete="off"></label><div class="modal-actions"><button type="button" class="secondary-button" data-close="rename-dialog">Cancel</button><button class="primary-button" type="submit">Rename</button></div></form></dialog>
+
+  <dialog id="settings-dialog" class="modal settings-modal" aria-labelledby="settings-title"><form id="settings-form"><div class="modal-heading"><div><span class="eyebrow">MAKE IT YOURS</span><h2 id="settings-title">Terminal settings</h2></div><button type="button" class="icon-button" data-close="settings-dialog" aria-label="Close settings"><svg><use href="#i-close"/></svg></button></div><div class="modal-scroll"><h3>Appearance</h3><div class="form-grid"><label class="field">Theme<select id="setting-theme"><option value="midnight">Midnight</option><option value="graphite">Graphite</option><option value="paper">Paper</option></select></label><label class="field">Font size<input id="setting-font-size" type="number" min="9" max="32" required></label><label class="field full">Font family<input id="setting-font-family" maxlength="500" required spellcheck="false"><small>Use fonts installed on your computer. No font downloads.</small></label><label class="field">Line height<input id="setting-line-height" type="number" min="1" max="2" step="0.01" required></label><label class="field">Cursor<select id="setting-cursor"><option value="bar">Bar</option><option value="block">Block</option><option value="underline">Underline</option></select></label></div><label class="switch-field"><span>Blink cursor</span><input id="setting-blink" type="checkbox" role="switch"></label><label class="switch-field"><span>GPU acceleration<small>Falls back to the standard renderer if unavailable.</small></span><input id="setting-gpu" type="checkbox" role="switch"></label><h3>Behavior</h3><label class="switch-field"><span>Screen reader support<small>Announce terminal output through an accessibility layer. May reduce throughput during large output.</small></span><input id="setting-screen-reader" type="checkbox" role="switch"></label><label class="field">Scrollback lines<input id="setting-scrollback" type="number" min="100" max="100000" step="100" required><small>Stored in memory while this page is open.</small></label><label class="switch-field"><span>Review multiline and control-character paste<small>Inspect clipboard text before sending it to the shell.</small></span><input id="setting-paste" type="checkbox" role="switch"></label><label class="field">Default shell profile<select id="setting-default-profile"></select></label><h3>Transfer settings</h3><p class="muted">Export appearance and shell profiles. Environment variables in profiles are included; terminal output is never included.</p><div class="transfer-actions"><button id="export-settings" type="button" class="secondary-button">Export JSON</button><button id="import-settings" type="button" class="secondary-button">Import JSON</button><input id="import-settings-file" type="file" accept=".json,application/json" hidden><button id="reset-settings" type="button" class="text-button">Reset defaults</button></div></div><div class="modal-actions"><button type="button" class="secondary-button" data-close="settings-dialog">Cancel</button><button type="submit" class="primary-button">Save settings</button></div></form></dialog>
+
+  <dialog id="profiles-dialog" class="modal settings-modal" aria-labelledby="profiles-title"><form id="profiles-form"><div class="modal-heading"><div><span class="eyebrow">START SOMETHING</span><h2 id="profiles-title">Shell profiles</h2></div><button type="button" class="icon-button" data-close="profiles-dialog" aria-label="Close profiles"><svg><use href="#i-close"/></svg></button></div><div class="modal-scroll"><div class="profile-editor-toolbar"><select id="edit-profile-select" aria-label="Profile to edit"></select><button id="add-profile" type="button" class="secondary-button"><svg><use href="#i-plus"/></svg>New</button><button id="delete-profile" type="button" class="text-button danger">Delete</button></div><div class="form-grid"><label class="field full">Profile name<input id="profile-name" required maxlength="100" autocomplete="off"></label><label class="field full">Executable<input id="profile-shell" placeholder="System default" list="shell-options" autocomplete="off" spellcheck="false"><datalist id="shell-options"></datalist><small>An executable path or name, not a shell command. Leave blank for the system default.</small></label><label class="field full">Arguments (JSON array)<textarea id="profile-args" rows="3" spellcheck="false" required></textarea><small>Each argument is passed directly. Example: ["-l"] or ["-d", "Ubuntu"] for wsl.exe.</small></label><label class="field full">Starting directory<input id="profile-cwd" placeholder="Home directory" autocomplete="off" spellcheck="false"></label><label class="field full">Environment overrides (JSON object)<textarea id="profile-env" rows="4" spellcheck="false" required></textarea><small>Overrides are saved in Chrome's local extension storage. Use your shell's credential manager for secrets.</small></label></div><p id="profile-error" class="form-error" role="alert" hidden></p></div><div class="modal-actions"><button type="button" class="secondary-button" data-close="profiles-dialog">Cancel</button><button type="submit" class="primary-button">Save profile</button></div></form></dialog>
+
+  <dialog id="help-dialog" class="modal help-modal" aria-labelledby="help-title"><div class="modal-heading"><div><span class="eyebrow">HOST TERMINAL</span><h2 id="help-title">Setup & shortcuts</h2></div><button class="icon-button" data-close="help-dialog" aria-label="Close help"><svg><use href="#i-close"/></svg></button></div><div class="modal-scroll"><h3>Connect a desktop computer</h3><ol class="setup-steps"><li>Load the package's <code>extension</code> folder from Chrome's <strong>Extensions → Developer mode → Load unpacked</strong>.</li><li>Install the native companion from the package:<pre id="help-install-command"></pre>Use <code>host-terminal.exe</code> on Windows. The installer registers this extension ID for your user account.</li><li>Return here and choose <strong>Connect to this computer</strong>. If Chrome was open during installation, reconnect or restart Chrome.</li></ol><p class="muted">The native companion runs shells with your current OS account's permissions. This extension does not provide a terminal inside Android or iOS Chrome.</p><h3>Keyboard shortcuts</h3><dl class="shortcut-list"><div><dt>Command palette</dt><dd><kbd>Ctrl / ⌘</kbd><kbd>Shift</kbd><kbd>P</kbd></dd></div><div><dt>New terminal</dt><dd><kbd>Ctrl / ⌘</kbd><kbd>Shift</kbd><kbd>Enter</kbd></dd></div><div><dt>Find in active terminal</dt><dd><kbd>Ctrl / ⌘</kbd><kbd>Shift</kbd><kbd>F</kbd></dd></div><div><dt>Copy selection</dt><dd><kbd>Ctrl / ⌘</kbd><kbd>Shift</kbd><kbd>C</kbd></dd></div><div><dt>Paste</dt><dd><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>V</kbd><span>or</span><kbd>⌘</kbd><kbd>V</kbd></dd></div><div><dt>Next / previous session</dt><dd><kbd>Alt</kbd><kbd>]</kbd><span>/</span><kbd>[</kbd></dd></div><div><dt>Terminal font size</dt><dd><kbd>Ctrl / ⌘</kbd><kbd>Shift</kbd><kbd>+</kbd><span>/</span><kbd>−</kbd></dd></div><div><dt>Send interrupt / EOF</dt><dd><kbd>Ctrl</kbd><kbd>C</kbd><span>/</span><kbd>D</kbd></dd></div></dl><h3>Session lifetime</h3><p>Closing this page detaches its views. The companion keeps sessions alive while Chrome and its native connection remain open. Reopen this page to attach again. A session can be attached to one page at a time.</p><p>Reattachment replays a bounded recent output stream. It is not an exact terminal screen checkpoint. For durable jobs or exact full-screen reattachment, run <code>tmux</code> or <code>screen</code> inside the shell. <strong>End all sessions</strong> terminates the companion's sessions.</p><h3>Connection troubleshooting</h3><p>Run <code>host-terminal doctor --extension-id YOUR_ID</code> using this page's extension ID. Check that the installed companion and Native Messaging manifest still exist. After moving the native executable or changing your extension ID, run install again.</p><p class="muted">Chrome connects through Native Messaging. Optional ChatGPT access opens a private, authenticated loopback connection while enabled. Ordinary web pages have no command API.</p></div></dialog>
+
+  <dialog id="palette-dialog" class="modal palette-modal" aria-label="Command palette"><div class="palette-input"><svg><use href="#i-search"/></svg><input id="palette-input" type="search" placeholder="Type a command…" aria-label="Filter commands" autocomplete="off" spellcheck="false"><kbd>Esc</kbd></div><div id="palette-results" role="listbox" aria-label="Commands"></div><div class="palette-footer"><span>↑ ↓ to navigate</span><span>↵ to run</span></div></dialog>
+</body>
+</html>

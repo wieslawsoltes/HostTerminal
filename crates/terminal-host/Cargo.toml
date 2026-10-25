@@ -1,0 +1,25 @@
+[package]
+name = "terminal-host"
+description = "Host Terminal Chrome native messaging companion and installer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "host-terminal"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+base64.workspace = true
+crossbeam-channel.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+terminal-protocol.workspace = true
+terminal-pty.workspace = true
+getrandom = "0.4.3"
+subtle = "2.6.1"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"

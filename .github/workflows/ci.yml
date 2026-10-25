@@ -1,0 +1,128 @@
+name: Build and test
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release:
+        description: Preserve every check when called by the release workflow
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !inputs.release }}
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: '1'
+
+jobs:
+  native:
+    name: Native host / ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, macos-15-intel, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Formatting
+        run: cargo fmt --all -- --check
+      - name: Lints
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Protocol, installer, agent bridge and PTY tests
+        run: cargo test --workspace --locked
+      - name: Build installed-host test executable
+        if: runner.os != 'Windows'
+        run: cargo build --locked -p terminal-host
+      - name: Real POSIX PTY and native framing integration
+        if: runner.os != 'Windows'
+        run: python tests/native_smoke.py
+      - name: Release binary
+        run: cargo build --release --workspace --locked
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-native-${{ matrix.os }}
+          path: |
+            target/release/host-terminal
+            target/release/host-terminal.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  extension:
+    name: Extension and ChatGPT plugin
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:mcp
+      - run: npm run build
+      - run: npm run build:plugin
+      - name: Verify checked-in plugin bundle and licenses
+        run: git diff --exit-code -- plugin/server/index.mjs plugin/THIRD_PARTY_NOTICES.txt
+      - name: Test packaged MCP server
+        run: npm run test:mcp
+        env:
+          HOST_TERMINAL_MCP_TEST_ENTRY: plugin/server/index.mjs
+      - run: npm run package
+      - run: npm run package:plugin
+      - name: Release metadata and publication invariants
+        run: |
+          python scripts/release.py validate --local
+          python scripts/release_tests.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-extension-and-plugin
+          path: artifacts/*.zip*
+          if-no-files-found: error
+          retention-days: 14
+
+  browser:
+    name: Chromium extension and real native companion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@1.89.0
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci
+      - run: npm run build
+      - run: npm run build:plugin
+      - run: cargo build --locked -p terminal-host
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
