@@ -46,6 +46,8 @@ For a downloaded native release, the executable is `./host-terminal`. If the ext
 
 ### Windows PowerShell
 
+The published Windows MSVC binary requires the [Microsoft Visual C++ v14 Redistributable for x64](https://aka.ms/vc14/vc_redist.x64.exe). Install it if it is not already present, especially if Windows reports a missing `VCRUNTIME140.dll`. Use the current package linked from [Microsoft's supported downloads](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
+
 ```powershell
 .\target\release\host-terminal.exe install `
   --extension-id pcgpjpaehgkbjinhohohlpcbgfhmkilh `
@@ -126,6 +128,7 @@ Existing native sessions are not retroactively disconnected by editing configura
 | **Failed to start native messaging host** | Check the executable exists, its architecture matches the OS, Unix execute permission is set, and platform security permits launching it. |
 | **Native host has exited** | Inspect Chrome's extension/service-worker error log and host stderr diagnostics. A missing/malformed adjacent config or an unauthorized origin is rejected before shell creation. |
 | **Error when communicating with the native messaging host** | Use the compiled executable directly as the manifest path. A shell wrapper that writes text to stdout corrupts Native Messaging frames. |
+| Windows reports missing `VCRUNTIME140.dll` | Install Microsoft's current x64 Visual C++ v14 Redistributable, then rerun the companion. |
 | Installer cannot replace Windows binary | End sessions and exit Chrome so the companion is no longer running, then rerun install. |
 | Installer reports `.install-lock` | Another install/uninstall is active. If one was forcibly killed, confirm none is running before deleting only that stale lock. |
 | Shell executable not found | Use a valid absolute executable path, or fix the host user's `PATH`. GUI-launched Chrome may inherit a different environment from a login terminal. |

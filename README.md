@@ -62,6 +62,8 @@ cargo build --release --locked
 
 **Windows PowerShell:**
 
+The prebuilt Windows companion requires the [Microsoft Visual C++ v14 Redistributable (x64)](https://aka.ms/vc14/vc_redist.x64.exe). Install it if Windows reports that `VCRUNTIME140.dll` is missing.
+
 ```powershell
 .\target\release\host-terminal.exe install `
   --extension-id pcgpjpaehgkbjinhohohlpcbgfhmkilh `

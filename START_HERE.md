@@ -35,6 +35,8 @@ chmod +x ./host-terminal
 
 ### Windows PowerShell
 
+The published Windows MSVC binary requires the [Microsoft Visual C++ v14 Redistributable for x64](https://aka.ms/vc14/vc_redist.x64.exe). Install it if it is not already present, especially if Windows reports a missing `VCRUNTIME140.dll`. Use the current package linked from [Microsoft's supported downloads](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
+
 ```powershell
 .\host-terminal.exe install --extension-id pcgpjpaehgkbjinhohohlpcbgfhmkilh --browser chrome
 .\host-terminal.exe doctor --extension-id pcgpjpaehgkbjinhohohlpcbgfhmkilh
