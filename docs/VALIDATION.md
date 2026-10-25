@@ -2,6 +2,21 @@
 
 Recorded 25 October 2026. Local results are listed below. The [GitHub Actions runs](https://github.com/wieslawsoltes/HostTerminal/actions) provide the authoritative status of platform CI; a release is published only after its complete validation matrix succeeds. Store review and platform signing are separate from these checks.
 
+## Executed GitHub CI
+
+The [successful baseline run 40230759359](https://github.com/wieslawsoltes/HostTerminal/actions/runs/40230759359) validated commit `7037eac160fcfbc1ca6585569f4f0eff2121307f` on 25 October 2026.
+
+| Job | Executed result |
+| --- | --- |
+| Ubuntu 24.04 x86-64 | Rust formatting, Clippy, 25 workspace tests, six real installed-host tests and release build passed |
+| macOS 15 Apple Silicon | Rust formatting, Clippy, 25 workspace tests, six real installed-host tests and release build passed |
+| macOS 15 Intel | Rust formatting, Clippy, 25 workspace tests, six real installed-host tests and release build passed |
+| Windows Server 2022 x86-64 | Rust formatting, Clippy, native/ConPTY tests and MSVC release build passed |
+| Extension and ChatGPT plugin | Strict TypeScript, 17 extension tests, 15 MCP tests against source and bundle, reproducible checked-in plugin, package validation and 14 release tests passed |
+| Chromium integration | Actual extension, installed native companion, PTYs and packaged MCP shared-session/revocation test passed |
+
+This run exposed and verified fixes for Darwin saturated-PTY shutdown and Winsock stale-connection probe timing. The release workflow reruns the complete matrix on the release commit, then tests every exact shipping target, including static musl. The release manifest records that commit and every artifact hash.
+
 ## Environment
 
 - Linux x86-64, Ubuntu 24.04 userspace.
